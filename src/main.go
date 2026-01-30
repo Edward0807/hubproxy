@@ -162,7 +162,7 @@ func main() {
 	}
 
 	fmt.Printf("版本号: %s\n", Version)
-	fmt.Printf("项目地址: https://github.com/sky22333/hubproxy\n")
+	fmt.Printf("项目地址: https://github.com/Edward0807/hubproxy\n")
 
 	// 创建HTTP2服务器
 	server := &http.Server{
