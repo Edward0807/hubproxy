@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os" // ✅ 新增：引入 os 包用于读取环境变量
 	"strings"
 	"time"
 
@@ -141,8 +142,18 @@ func main() {
 	cfg := config.GetConfig()
 	router := buildRouter(cfg)
 
+	// ✅ 修改重点开始：动态获取端口
+	// 1. 尝试从环境变量获取 PORT (SAP/Docker 环境)
+	runPort := os.Getenv("PORT")
+	
+	// 2. 如果环境变量没设置，则使用配置文件中的默认值 (本地开发环境)
+	if runPort == "" {
+		runPort = fmt.Sprintf("%d", cfg.Server.Port)
+	}
+
 	fmt.Printf("HubProxy 启动成功\n")
-	fmt.Printf("监听地址: %s:%d\n", cfg.Server.Host, cfg.Server.Port)
+	// 注意：在云环境中，Host 最好绑定到 0.0.0.0，而不是配置文件里可能写的 127.0.0.1
+	fmt.Printf("监听地址: 0.0.0.0:%s\n", runPort)
 	fmt.Printf("限流配置: %d请求/%g小时\n", cfg.RateLimit.RequestLimit, cfg.RateLimit.PeriodHours)
 
 	// 显示HTTP/2支持状态
@@ -155,11 +166,13 @@ func main() {
 
 	// 创建HTTP2服务器
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		// ✅ 修改重点：强制监听所有网卡(0.0.0.0)和动态端口
+		Addr:         ":" + runPort, 
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 30 * time.Minute,
 		IdleTimeout:  120 * time.Second,
 	}
+	// ✅ 修改重点结束
 
 	// 根据配置决定是否启用H2C
 	if cfg.Server.EnableH2C {
